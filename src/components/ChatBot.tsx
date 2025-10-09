@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react'
-import axios from 'axios'
 
 interface Message {
   id: string
@@ -22,6 +21,7 @@ export default function ChatBot() {
   const [systemPrompt, setSystemPrompt] = useState('')
   const [tempSystemPrompt, setTempSystemPrompt] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // 初期化時にローカルストレージから設定を読み込む
   useEffect(() => {
@@ -39,12 +39,19 @@ export default function ChatBot() {
     scrollToBottom()
   }, [messages])
 
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort()
+    }
+  }, [])
+
   const sendMessage = async () => {
-    if (!inputText.trim() || isLoading) return
+    const trimmed = inputText.trim()
+    if (!trimmed || isLoading) return
 
     const userMessage: Message = {
-      id: Date.now().toString(),
-      text: inputText,
+      id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      text: trimmed,
       sender: 'user',
       timestamp: new Date()
     }
@@ -53,42 +60,120 @@ export default function ChatBot() {
     setInputText('')
     setIsLoading(true)
 
+    // 進行中のリクエストがあればキャンセル
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
+    const assistantMessageId = `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    setMessages(prev => [
+      ...prev,
+      {
+        id: assistantMessageId,
+        text: '',
+        sender: 'bot',
+        timestamp: new Date()
+      }
+    ])
+
     try {
       console.log('Sending message with conversation_id:', conversationId)
 
-      const response = await axios.post('/api/chat', {
-        message: inputText,
-        conversation_id: conversationId,
-        system_prompt: systemPrompt
+      const response = await fetch('/api/chat-stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: trimmed,
+          conversation_id: conversationId || undefined,
+          system_prompt: systemPrompt || undefined
+        }),
+        signal: controller.signal
       })
 
-      console.log('Response from API:', response.data)
-
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: response.data.answer,
-        sender: 'bot',
-        timestamp: new Date()
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      setMessages(prev => [...prev, botMessage])
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
 
-      if (response.data.conversation_id) {
-        console.log('Setting conversation_id to:', response.data.conversation_id)
-        setConversationId(response.data.conversation_id)
+      if (!reader) {
+        throw new Error('No reader available')
+      }
+
+      let buffer = ''
+      let accumulatedText = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          const data = line.slice(6)
+          if (!data || data === '[DONE]') continue
+
+          try {
+            const parsed = JSON.parse(data)
+
+            if (parsed.event === 'message') {
+              accumulatedText += parsed.answer || ''
+              setMessages(prev =>
+                prev.map(message =>
+                  message.id === assistantMessageId
+                    ? { ...message, text: accumulatedText }
+                    : message
+                )
+              )
+            } else if (parsed.event === 'message_end') {
+              if (parsed.conversation_id) {
+                console.log('Setting conversation_id to:', parsed.conversation_id)
+                setConversationId(parsed.conversation_id)
+              }
+            } else if (parsed.event === 'error') {
+              throw new Error(parsed.message || 'Streaming error')
+            }
+          } catch (e) {
+            console.error('Failed to parse SSE data:', e)
+          }
+        }
+      }
+
+      if (!accumulatedText) {
+        setMessages(prev =>
+          prev.map(message =>
+            message.id === assistantMessageId
+              ? { ...message, text: '応答を取得できませんでした。' }
+              : message
+          )
+        )
       }
     } catch (error: any) {
-      console.error('Error sending message:', error)
-      console.error('Error details:', error.response?.data)
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: 'エラーが発生しました。もう一度お試しください。',
-        sender: 'bot',
-        timestamp: new Date()
+      if (error.name === 'AbortError') {
+        console.log('Request was cancelled')
+        setMessages(prev => prev.filter(message => message.id !== assistantMessageId))
+      } else {
+        console.error('Streaming error:', error)
+        setMessages(prev =>
+          prev.map(message =>
+            message.id === assistantMessageId
+              ? { ...message, text: 'エラーが発生しました。もう一度お試しください。' }
+              : message
+          )
+        )
       }
-      setMessages(prev => [...prev, errorMessage])
     } finally {
       setIsLoading(false)
+      abortControllerRef.current = null
     }
   }
 
@@ -111,6 +196,8 @@ export default function ChatBot() {
     localStorage.setItem('systemPrompt', tempSystemPrompt)
     setShowSettings(false)
     // 会話をリセット（新しいプロンプトで開始）
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = null
     setMessages([])
     setConversationId('')
   }

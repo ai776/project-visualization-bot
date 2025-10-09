@@ -27,6 +27,7 @@ const AVAILABLE_BOTS: Bot[] = [
 ]
 
 interface Message {
+  id: string
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
@@ -103,11 +104,13 @@ export default function MultiBotSelector() {
 
   // メッセージ送信処理
   const sendMessage = async () => {
-    if (!input.trim() || isLoading) return
+    const trimmed = input.trim()
+    if (!trimmed || isLoading) return
 
     const userMessage: Message = {
+      id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       role: 'user',
-      content: input,
+      content: trimmed,
       timestamp: new Date(),
       botType: selectedBot
     }
@@ -116,18 +119,22 @@ export default function MultiBotSelector() {
     setInput('')
     setIsLoading(true)
 
-    // 新しいAbortControllerを作成
-    abortControllerRef.current = new AbortController()
+    // 新しいAbortControllerを作成（既存があればキャンセル）
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    abortControllerRef.current = controller
 
-    // ストリーミング中のメッセージを追加（空の状態で）
+    const streamingMessageId = `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     const streamingMessage: Message = {
+      id: streamingMessageId,
       role: 'assistant',
       content: '',
       timestamp: new Date(),
       botType: selectedBot
     }
     setMessages(prev => [...prev, streamingMessage])
-    const streamingMessageIndex = messages.length + 1 // userMessage追加後のインデックス
 
     try {
       const response = await fetch(currentBot.apiEndpoint, {
@@ -136,12 +143,12 @@ export default function MultiBotSelector() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: userMessage.content,
+          message: trimmed,
           conversation_id: conversationId,
           user: userId,
           system_prompt: customPrompt || undefined
         }),
-        signal: abortControllerRef.current.signal
+        signal: controller.signal
       })
 
       if (!response.ok) {
@@ -168,85 +175,72 @@ export default function MultiBotSelector() {
         buffer = lines.pop() || ''
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6)
+          if (!line.startsWith('data: ')) continue
 
-            if (data === '[DONE]') {
-              continue
-            }
+          const data = line.slice(6)
+          if (!data || data === '[DONE]') continue
 
-            try {
-              const parsed = JSON.parse(data)
+          try {
+            const parsed = JSON.parse(data)
 
-              if (parsed.event === 'message') {
-                accumulatedText += parsed.answer || ''
+            if (parsed.event === 'message') {
+              accumulatedText += parsed.answer || ''
 
-                // ストリーミング中のメッセージを更新
-                setMessages(prev => {
-                  const newMessages = [...prev]
-                  if (newMessages[streamingMessageIndex]) {
-                    newMessages[streamingMessageIndex] = {
-                      ...newMessages[streamingMessageIndex],
-                      content: accumulatedText
-                    }
-                  }
-                  return newMessages
-                })
-              } else if (parsed.event === 'message_end') {
-                // conversation_idを保存（ボットごとに）
-                if (parsed.conversation_id) {
-                  const botConversationKey = `conversationId_${selectedBot}`
-                  sessionStorage.setItem(botConversationKey, parsed.conversation_id)
-                  setConversationId(parsed.conversation_id)
-                }
+              setMessages(prev =>
+                prev.map(message =>
+                  message.id === streamingMessageId
+                    ? { ...message, content: accumulatedText }
+                    : message
+                )
+              )
+            } else if (parsed.event === 'message_end') {
+              if (parsed.conversation_id) {
+                const botConversationKey = `conversationId_${selectedBot}`
+                sessionStorage.setItem(botConversationKey, parsed.conversation_id)
+                setConversationId(parsed.conversation_id)
               }
-            } catch (e) {
-              console.error('Failed to parse SSE data:', e)
+            } else if (parsed.event === 'error') {
+              throw new Error(parsed.message || 'Streaming error')
             }
+          } catch (e) {
+            console.error('Failed to parse SSE data:', e)
           }
         }
       }
 
-      // 最終的なメッセージを確定
-      if (accumulatedText) {
-        setMessages(prev => {
-          const newMessages = [...prev]
-          if (newMessages[streamingMessageIndex]) {
-            newMessages[streamingMessageIndex] = {
-              ...newMessages[streamingMessageIndex],
-              content: accumulatedText
-            }
-          }
-          return newMessages
-        })
+      if (!accumulatedText) {
+        setMessages(prev =>
+          prev.map(message =>
+            message.id === streamingMessageId
+              ? { ...message, content: '応答を取得できませんでした。' }
+              : message
+          )
+        )
       }
-
     } catch (error: any) {
       if (error.name === 'AbortError') {
         console.log('Request was cancelled')
-        // キャンセル時は空のメッセージを削除
-        setMessages(prev => prev.filter((_, index) => index !== streamingMessageIndex))
+        setMessages(prev => prev.filter(message => message.id !== streamingMessageId))
       } else {
         console.error('Error:', error)
-        // エラー時はメッセージを更新
-        setMessages(prev => {
-          const newMessages = [...prev]
-          if (newMessages[streamingMessageIndex]) {
-            newMessages[streamingMessageIndex] = {
-              ...newMessages[streamingMessageIndex],
-              content: 'エラーが発生しました。もう一度お試しください。'
-            }
-          }
-          return newMessages
-        })
+        setMessages(prev =>
+          prev.map(message =>
+            message.id === streamingMessageId
+              ? { ...message, content: 'エラーが発生しました。もう一度お試しください。' }
+              : message
+          )
+        )
       }
     } finally {
       setIsLoading(false)
+      abortControllerRef.current = null
     }
   }
 
   // 会話リセット
   const resetConversation = () => {
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = null
     const botConversationKey = `conversationId_${selectedBot}`
     sessionStorage.removeItem(botConversationKey)
     setConversationId(null)
@@ -336,9 +330,9 @@ export default function MultiBotSelector() {
               </div>
             )}
 
-            {filteredMessages.map((message, index) => (
+            {filteredMessages.map((message) => (
               <div
-                key={index}
+                key={message.id}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
                   }`}
               >
