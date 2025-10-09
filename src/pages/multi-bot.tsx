@@ -10,7 +10,9 @@ export default function MultiBotPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <MultiBotSelector />
+      <div className="min-h-screen bg-gray-100 py-6 md:py-10 px-4">
+        <MultiBotSelector />
+      </div>
     </>
   )
 }
