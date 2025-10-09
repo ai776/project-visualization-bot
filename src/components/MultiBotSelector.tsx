@@ -256,10 +256,10 @@ export default function MultiBotSelector() {
   }
 
   return (
-    <div className="flex flex-col h-screen md:h-[70vh] md:max-h-[70vh] md:min-h-[560px] bg-gray-50 w-full md:max-w-5xl md:mx-auto md:my-8 md:rounded-3xl md:border md:border-gray-200 md:shadow-lg md:overflow-hidden">
+    <div className="flex flex-col h-screen md:h-[70vh] md:max-h-[70vh] md:min-h-[560px] bg-gray-50 w-full md:max-w-md md:mx-auto md:my-8 md:rounded-3xl md:border md:border-gray-200 md:shadow-lg md:overflow-hidden">
       {/* ヘッダー：ボット選択 */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 py-3">
+        <div className="max-w-md mx-auto px-4 py-3 w-full">
           <div className="flex items-center justify-between">
             <button
               onClick={() => setIsBotSelectorOpen(!isBotSelectorOpen)}
@@ -319,7 +319,7 @@ export default function MultiBotSelector() {
 
       {/* チャットエリア */}
       <div className="flex-1 overflow-hidden">
-        <div className="max-w-4xl mx-auto h-full flex flex-col">
+        <div className="w-full h-full flex flex-col">
           {/* メッセージ表示エリア */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {filteredMessages.length === 0 && (
@@ -353,7 +353,7 @@ export default function MultiBotSelector() {
 
           {/* 入力エリア */}
           <div className="border-t bg-white p-4">
-            <div className="max-w-4xl mx-auto">
+            <div className="w-full">
               <div className="flex gap-2">
                 <input
                   type="text"
