@@ -372,7 +372,7 @@ export default function MultiBotSelector() {
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                   placeholder={currentBot.placeholder}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
                   onClick={sendMessage}
