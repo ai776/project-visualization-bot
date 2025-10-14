@@ -257,8 +257,12 @@ export default function MultiBotSelector() {
 
   return (
     <div
-      className="flex flex-col h-[100dvh] md:h-[70vh] md:max-h-[70vh] md:min-h-[560px] bg-gray-50 w-full max-w-md md:max-w-md md:mx-auto md:my-8 md:rounded-3xl md:border md:border-gray-200 md:shadow-lg overflow-y-auto md:overflow-hidden overflow-x-hidden px-4 md:px-8"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      className="flex flex-col h-[100dvh] md:h-[70vh] md:max-h-[70vh] md:min-h-[560px] bg-gray-50 w-full max-w-md md:max-w-md md:mx-auto md:my-8 md:rounded-3xl md:border md:border-gray-200 md:shadow-lg overflow-y-auto md:overflow-hidden overflow-x-hidden px-2 md:px-8"
+      style={{
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 8px)',
+        paddingRight: 'calc(env(safe-area-inset-right, 0px) + 8px)'
+      }}
     >
       {/* ヘッダー：ボット選択 */}
       <div className="bg-white shadow-sm border-b rounded-t-2xl">
@@ -356,7 +360,7 @@ export default function MultiBotSelector() {
 
           {/* 入力エリア */}
           <div
-            className="border-t bg-white px-3 py-4 sticky bottom-0 left-0 right-0 z-10 rounded-b-2xl"
+            className="border-t bg-white px-2 md:px-3 py-4 sticky bottom-0 left-0 right-0 z-10 rounded-b-2xl"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
           >
             <div className="w-full">
