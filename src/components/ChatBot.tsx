@@ -212,7 +212,10 @@ export default function ChatBot() {
   }
 
   return (
-    <div className="flex flex-col w-full max-w-md mx-auto bg-gray-100 md:bg-white relative h-[100dvh] md:h-[70vh] md:max-h-[70vh] md:min-h-[520px] md:rounded-3xl md:shadow-lg md:border md:border-gray-200 overflow-hidden">
+    <div
+      className="flex flex-col w-full max-w-md mx-auto bg-gray-100 md:bg-white relative h-[100dvh] md:h-[70vh] md:max-h-[70vh] md:min-h-[520px] md:rounded-3xl md:shadow-lg md:border md:border-gray-200 overflow-y-auto md:overflow-hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
       {/* ヘッダー */}
       <div className="bg-line-blue text-white p-4 flex items-center justify-between shadow-md z-20 relative">
         <div className="flex items-center">
@@ -277,7 +280,7 @@ export default function ChatBot() {
       )}
 
       {/* メッセージエリア */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 pb-28 space-y-4 bg-gray-50">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -311,7 +314,10 @@ export default function ChatBot() {
       </div>
 
       {/* 入力エリア */}
-      <div className="bg-white border-t border-gray-200 p-3">
+      <div
+        className="bg-white border-t border-gray-200 p-3 sticky bottom-0 left-0 z-10"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.5rem)' }}
+      >
         <div className="flex items-center space-x-2">
           <input
             type="text"
