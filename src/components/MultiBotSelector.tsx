@@ -256,7 +256,7 @@ export default function MultiBotSelector() {
   }
 
   return (
-    <div className="flex flex-col h-screen md:h-[70vh] md:max-h-[70vh] md:min-h-[560px] bg-gray-50 w-full md:max-w-md md:mx-auto md:my-8 md:rounded-3xl md:border md:border-gray-200 md:shadow-lg md:overflow-hidden">
+    <div className="flex flex-col h-[100dvh] md:h-[70vh] md:max-h-[70vh] md:min-h-[560px] bg-gray-50 w-full md:max-w-md md:mx-auto md:my-8 md:rounded-3xl md:border md:border-gray-200 md:shadow-lg md:overflow-hidden">
       {/* ヘッダー：ボット選択 */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-md mx-auto px-4 py-3 w-full">

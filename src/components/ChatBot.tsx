@@ -212,7 +212,7 @@ export default function ChatBot() {
   }
 
   return (
-    <div className="flex flex-col w-full max-w-md mx-auto bg-gray-100 md:bg-white relative min-h-[520px] md:h-[70vh] md:max-h-[70vh] md:rounded-3xl md:shadow-lg md:border md:border-gray-200 overflow-hidden">
+    <div className="flex flex-col w-full max-w-md mx-auto bg-gray-100 md:bg-white relative h-[100dvh] md:h-[70vh] md:max-h-[70vh] md:min-h-[520px] md:rounded-3xl md:shadow-lg md:border md:border-gray-200 overflow-hidden">
       {/* ヘッダー */}
       <div className="bg-line-blue text-white p-4 flex items-center justify-between shadow-md z-20 relative">
         <div className="flex items-center">
