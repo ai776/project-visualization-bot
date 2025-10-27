@@ -25,7 +25,6 @@ export default function ChatBot() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const COLLAPSED_TEXTAREA_HEIGHT = 44
-  const MIN_TEXTAREA_HEIGHT = 120
   const MAX_TEXTAREA_HEIGHT = 360
 
   // 初期化時にローカルストレージから設定を読み込む
@@ -62,9 +61,26 @@ export default function ChatBot() {
       return
     }
 
-    const nextHeight = Math.min(Math.max(textarea.scrollHeight, MIN_TEXTAREA_HEIGHT), MAX_TEXTAREA_HEIGHT)
+    const computed = window.getComputedStyle(textarea)
+    const fontSize = parseFloat(computed.fontSize) || 16
+    const lineHeight =
+      parseFloat(computed.lineHeight) || Math.round(fontSize * 1.4)
+    const padding =
+      (parseFloat(computed.paddingTop) || 0) + (parseFloat(computed.paddingBottom) || 0)
+    const border =
+      (parseFloat(computed.borderTopWidth) || 0) + (parseFloat(computed.borderBottomWidth) || 0)
+
+    const contentHeight = textarea.scrollHeight - padding
+    const lines = Math.max(1, Math.ceil(contentHeight / lineHeight))
+    const maxLines = Math.max(
+      1,
+      Math.floor((MAX_TEXTAREA_HEIGHT - padding - border) / lineHeight)
+    )
+    const clampedLines = Math.min(lines, maxLines)
+    const nextHeight = padding + border + clampedLines * lineHeight
+
     textarea.style.height = `${nextHeight}px`
-    if (nextHeight >= MAX_TEXTAREA_HEIGHT) {
+    if (lines > maxLines) {
       textarea.style.overflowY = 'auto'
     }
   }
