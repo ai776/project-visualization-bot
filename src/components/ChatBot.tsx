@@ -24,6 +24,7 @@ export default function ChatBot() {
   const abortControllerRef = useRef<AbortController | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  const COLLAPSED_TEXTAREA_HEIGHT = 44
   const MIN_TEXTAREA_HEIGHT = 120
   const MAX_TEXTAREA_HEIGHT = 360
 
@@ -54,11 +55,18 @@ export default function ChatBot() {
     if (!textarea) return
 
     textarea.style.height = 'auto'
-    const nextHeight = Math.min(
-      Math.max(textarea.scrollHeight, MIN_TEXTAREA_HEIGHT),
-      MAX_TEXTAREA_HEIGHT
-    )
+    textarea.style.overflowY = 'hidden'
+
+    if (!textarea.value.trim()) {
+      textarea.style.height = `${COLLAPSED_TEXTAREA_HEIGHT}px`
+      return
+    }
+
+    const nextHeight = Math.min(Math.max(textarea.scrollHeight, MIN_TEXTAREA_HEIGHT), MAX_TEXTAREA_HEIGHT)
     textarea.style.height = `${nextHeight}px`
+    if (nextHeight >= MAX_TEXTAREA_HEIGHT) {
+      textarea.style.overflowY = 'auto'
+    }
   }
 
   useEffect(() => {
@@ -364,9 +372,8 @@ export default function ChatBot() {
             style={{
               position: 'relative',
               zIndex: 10,
-              minHeight: `${MIN_TEXTAREA_HEIGHT}px`,
-              maxHeight: `${MAX_TEXTAREA_HEIGHT}px`,
-              overflowY: 'auto'
+              height: `${COLLAPSED_TEXTAREA_HEIGHT}px`,
+              maxHeight: `${MAX_TEXTAREA_HEIGHT}px`
             }}
           ></textarea>
           <button
