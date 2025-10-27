@@ -177,7 +177,8 @@ export default function ChatBot() {
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.nativeEvent.isComposing) return
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       sendMessage()
@@ -323,16 +324,16 @@ export default function ChatBot() {
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.5rem)' }}
       >
         <div className="flex items-center space-x-2">
-          <input
-            type="text"
+          <textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             placeholder="メッセージを入力..."
-            className="flex-1 px-4 py-2 bg-gray-100 rounded-full text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-line-blue"
+            className="flex-1 px-4 py-2 bg-gray-100 rounded-2xl text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-line-blue resize-none"
             disabled={isLoading}
+            rows={1}
             style={{ position: 'relative', zIndex: 10 }}
-          />
+          ></textarea>
           <button
             onClick={sendMessage}
             disabled={isLoading || !inputText.trim()}
