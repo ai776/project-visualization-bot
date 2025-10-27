@@ -22,6 +22,10 @@ export default function ChatBot() {
   const [tempSystemPrompt, setTempSystemPrompt] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const MIN_TEXTAREA_HEIGHT = 120
+  const MAX_TEXTAREA_HEIGHT = 360
 
   // 初期化時にローカルストレージから設定を読み込む
   useEffect(() => {
@@ -43,6 +47,26 @@ export default function ChatBot() {
     return () => {
       abortControllerRef.current?.abort()
     }
+  }, [])
+
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    textarea.style.height = 'auto'
+    const nextHeight = Math.min(
+      Math.max(textarea.scrollHeight, MIN_TEXTAREA_HEIGHT),
+      MAX_TEXTAREA_HEIGHT
+    )
+    textarea.style.height = `${nextHeight}px`
+  }
+
+  useEffect(() => {
+    adjustTextareaHeight()
+  }, [inputText])
+
+  useEffect(() => {
+    adjustTextareaHeight()
   }, [])
 
   const sendMessage = async () => {
@@ -185,6 +209,10 @@ export default function ChatBot() {
     }
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputText(e.target.value)
+  }
+
   const toggleSettings = () => {
     setShowSettings(!showSettings)
     if (!showSettings) {
@@ -323,16 +351,23 @@ export default function ChatBot() {
         className="bg-white border-t border-gray-200 px-2 md:px-3 py-3 sticky bottom-0 left-0 right-0 z-10 rounded-b-2xl"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.5rem)' }}
       >
-        <div className="flex items-center space-x-2">
+        <div className="flex items-end space-x-2">
           <textarea
+            ref={textareaRef}
             value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="メッセージを入力..."
             className="flex-1 px-4 py-2 bg-gray-100 rounded-2xl text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-line-blue resize-none"
             disabled={isLoading}
             rows={1}
-            style={{ position: 'relative', zIndex: 10 }}
+            style={{
+              position: 'relative',
+              zIndex: 10,
+              minHeight: `${MIN_TEXTAREA_HEIGHT}px`,
+              maxHeight: `${MAX_TEXTAREA_HEIGHT}px`,
+              overflowY: 'auto'
+            }}
           ></textarea>
           <button
             onClick={sendMessage}
